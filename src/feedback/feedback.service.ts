@@ -23,13 +23,16 @@ export class FeedbackService {
     const analysis = await this.analyseService.analyseMessage(message);
 
     //Google Sheets
-    await this.googleSheetsService.appendFeedbackRow({
-      date: new Date().toISOString(),
+    const date = new Date().toISOString();
+    await this.googleSheetsService.appendFeedbackRow([
+      date,
       role,
       branch,
       message,
-      ...analysis,
-    });
+      analysis.tone,
+      analysis.criticality,
+      analysis.solution,
+    ]);
 
     return {
       success: true,

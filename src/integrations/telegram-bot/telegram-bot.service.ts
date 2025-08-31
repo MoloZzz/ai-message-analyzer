@@ -155,7 +155,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getBranches(): string[] {
-    const raw = this.config.get<string>('TELEGRAM_BRANCHES') || '';
+    const raw = this.config.get<string>('FILIAS') || '';
     return raw.split(',').map(s => s.trim()).filter(Boolean);
   }
 }

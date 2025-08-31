@@ -1,45 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
-
-interface FeedbackRow {
-  date: string;
-  role: string;
-  branch: string;
-  message: string;
-  tone: string;
-  criticality: number;
-  solution: string;
-}
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class GoogleSheetsService {
   private sheets;
 
   constructor() {
-    this.sheets = google.sheets({
-      version: 'v4',
-      auth: process.env.GOOGLE_API_KEY,
-    });
+    if (process.env.GOOGLE_API_KEY) {
+      this.sheets = google.sheets({
+        version: 'v4',
+        auth: process.env.GOOGLE_API_KEY,
+      });
+    } else {
+      this.sheets = null; // no google
+    }
   }
 
-  async appendFeedbackRow(data: FeedbackRow) {
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  async appendFeedbackRow(data: (string | number)[]) {
+    if (this.sheets) {
+      const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+      const range = 'Feedback!A:D'; // example
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [data],
+        },
+      });
+    } else {
+      // local csv
+      const filePath = path.resolve(process.cwd(), 'feedback.csv');
+      const row = data.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(',') + '\n';
 
-    await this.sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Feedback!A:G',
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [[
-          data.date,
-          data.role,
-          data.branch,
-          data.message,
-          data.tone,
-          data.criticality,
-          data.solution,
-        ]],
-      },
-    });
+      fs.appendFileSync(filePath, row, { encoding: 'utf8' });
+    }
   }
 }
